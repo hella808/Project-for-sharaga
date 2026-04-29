@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FitPro</title>
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-4.0.0.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="FitGuide.css">
+</head>
+<body>
+
+<header class="main-header">
+    <div class="header-content">
+        <div class="logo">
+            <h1><i class="fas fa-dumbbell"></i> FitPro</h1>
+            <p>Программы тренировок + Калькулятор КБЖУ</p>
+        </div>
+        <div class="program-selector">
+            <label><i class="fas fa-chart-line"></i> Уровень:</label>
+            <select id="levelSelect">
+                <option value="beginner">🌱 Для начинающих</option>
+                <option value="intermediate">⚡ Для средних</option>
+                <option value="advanced">💪 Для опытных</option>
+            </select>
+            <label><i class="fas fa-map-marker-alt"></i> Место занятий:</label>
+            <select id="placeSelect">
+                <option value="gym">🏋️ Тренажерный зал</option>
+                <option value="home">🏠 Дом</option>
+                <option value="street">🌳 Улица / Стадион</option>
+            </select>
+        </div>
+    </div>
+</header>
+
+<div class="main-container">
+    <div class="training-section">
+        <div class="days-tabs" id="daysTabs"></div>
+        <div class="program-card">
+            <div class="program-header">
+                <h2 id="programTitle">🏋️ Программа тренировки</h2>
+                <p id="programSubtitle">Выберите день недели и место занятий</p>
+            </div>
+            <div class="exercises-grid" id="exercisesList"></div>
+        </div>
+    </div>
+
+    <div class="right-sidebar">
+        <div class="tips-card">
+            <div class="tips-header">
+                <h3><i class="fas fa-lightbulb"></i> Советы дня</h3>
+                <i class="fas fa-comment-dots"></i>
+            </div>
+            <div class="tip-content" id="tipContent"></div>
+            <div class="slider-controls">
+                <button class="slider-btn" id="prevTip"><i class="fas fa-chevron-left"></i> Назад</button>
+                <button class="slider-btn" id="nextTip">Вперёд <i class="fas fa-chevron-right"></i></button>
+            </div>
+            <div class="slider-dots" id="sliderDots"></div>
+        </div>
+
+        <div class="nutrition-card">
+            <h2><i class="fas fa-calculator"></i> Калькулятор КБЖУ</h2>
+            <div class="calc-form">
+                <div class="form-row">
+                    <div class="form-group"><label>Пол</label><select id="gender"><option value="male">Мужчина</option><option value="female">Женщина</option></select></div>
+                    <div class="form-group"><label>Рост (см)</label><input type="number" id="height" placeholder="170" value="170"></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label>Вес (кг)</label><input type="number" id="weight" placeholder="70" value="70"></div>
+                    <div class="form-group"><label>Возраст (лет)</label><input type="number" id="age" placeholder="25" value="25"></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label>Цель</label><select id="goalKBJU"><option value="lose">🔥 Похудение</option><option value="maintain">⚖️ Поддержание</option><option value="gain">💪 Набор массы</option></select></div>
+                    <div class="form-group"><label>Активность</label><select id="activity"><option value="1.2">🛋️ Минимальная</option><option value="1.375">🚶 Легкая (1-2 тренировки)</option><option value="1.55">🏃 Средняя (3-5)</option><option value="1.725">💪 Высокая (6-7)</option><option value="1.9">⚡ Очень высокая</option></select></div>
+                </div>
+                <button class="calc-btn" id="calcKBJU"><i class="fas fa-chart-simple"></i> Рассчитать КБЖУ</button>
+            </div>
+            <div id="kbjuResult" class="kbju-result">
+                <div style="font-weight:bold;">📊 Ваша норма</div>
+                <div class="result-stats" id="resultStats"><div class="stat">—</div></div>
+                <div class="result-tip" id="resultTip">Заполните данные и нажмите "Рассчитать"</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<footer class="footer">
+    <p><i class="fas fa-dumbbell"></i> FitPro — Техника выполнения: нажмите на кнопку "Техника" под каждым упражнением</p>
+</footer>
+
+<script>
+    $(document).ready(function() {
+        // БАЗА УПРАЖНЕНИЙ ДЛЯ РАЗНЫХ МЕСТ
+        // Для НАЧИНАЮЩИХ (Full Body) - адаптация под место
+        const beginnerBase = {
+            gym: [
+                { name: "Жим штанги лежа", muscle: "Грудные", reps: "4х8", desc: "Классический жим штанги лежа", technique: "Сведите лопатки, опускайте штангу к нижней части груди. Локти под 45°.", image: "techphoto/zhim_lezha.jpg"},
+                { name: "Тяга верхнего блока", muscle: "Спина", reps: "4х10", desc: "Тяга широким хватом к груди", technique: "Корпус прямой, лопатки сведены, тяните к груди.", image: "techphoto/tyga_verx_block.jpg" },
+                { name: "Жим ногами", muscle: "Ноги", reps: "4х10", desc: "Жим на платформе", technique: "Спина прижата, колени не выпрямляйте до конца.", image: "techphoto/zhim_nogami.jpg" },
+                { name: "Подъем штанги на бицепс", muscle: "Бицепс", reps: "4х10", desc: "Сгибание рук со штангой", technique: "Локти прижаты к корпусу.", image: "techphoto/podym_shtangi_biceps.jpg" },
+                { name: "Французский жим", muscle: "Трицепс", reps: "4х10", desc: "Жим лежа за голову", technique: "Локти смотрят вверх.", image: "techphoto/france_zhim.jpg" }
+            ],
+            home: [
+                { name: "Отжимания от пола", muscle: "Грудные", reps: "4х12", desc: "Классические отжимания", technique: "Тело прямое, локти под 45°.", image: "techphoto/otzhimanya.jpg" },
+                { name: "Подтягивания на турнике (если есть)", muscle: "Спина", reps: "4х8", desc: "Широкий хват", technique: "Лопатки сведены, подтягивайтесь плавно.", image: "techphoto/podtygivanya.jpg" },
+                { name: "Приседания со штангой", muscle: "Ноги", reps: "4х15", desc: "С рюкзаком/гантелями", technique: "Спина прямая, колени не заходят за носки.", image: "techphoto/squat.jpg" },
+                { name: "Подъем гантелей на бицепс", muscle: "Бицепс", reps: "4х12", desc: "Сидя или стоя", technique: "Локти прижаты, без раскачки.", image: "techphoto/ganteli_biceps.jpg" },
+                { name: "Отжимания узким хватом", muscle: "Трицепс", reps: "4х10", desc: "Трицепс", technique: "Ладони вместе, локти вдоль тела.", image: "techphoto/otzhimanya_uzkim_hvatom.jpg" }
+            ],
+            street: [
+                { name: "Отжимания от скамьи/брусьев", muscle: "Грудные", reps: "4х12", desc: "На лавочке/брусьях", technique: "Корпус прямой, опускайтесь до угла 90°.", image: "techphoto/otzhimanya_ot_skamie.jpg" },
+                { name: "Подтягивания на турнике", muscle: "Спина", reps: "4х8", desc: "Широкий/обратный хват", technique: "Тянитесь грудью к перекладине.", image: "techphoto/podtygivanya.jpg" },
+                { name: "Приседания с выпрыгиванием", muscle: "Ноги", reps: "4х10", desc: "Взрывная сила", technique: "Из приседа максимальный прыжок.", image: "techphoto/squat_jump.jpg" },
+                { name: "Подтягивания обратным хватом", muscle: "Бицепс", reps: "4х8", desc: "Бицепс + спина", technique: "Ладони к себе, подтягивайтесь до груди.", image: "techphoto/podtygivanya_obratie_hvat.jpg" },
+                { name: "Отжимания на брусьях", muscle: "Трицепс", reps: "4х8", desc: "На параллельных брусьях", technique: "Корпус вертикально, локти прижаты.", image: "techphoto/otzhimaniya-na-brusyah.jpg" }
+            ]
+        };
+
+        // Для СРЕДНИХ по дням с адаптацией под место
+        const intermediateBase = {
+            gym: {
+                monday: [
+                    { name: "Тяга верхнего блока", muscle: "Спина", reps: "2х10", desc: "Широкий хват", technique: "Лопатки сведены.", image: "techphoto/tyga_verx_block.jpg" },
+                    { name: "Тяга нижнего блока", muscle: "Спина", reps: "2х10", desc: "Узкий хват", technique: "Корпус вертикально.", image: "techphoto/tyga_niz_block.jpg" },
+                    { name: "Тяга штанги в наклоне", muscle: "Спина", reps: "3х10", desc: "Работа на широчайшие", technique: "Наклон 45°, штанга к поясу.", image: "techphoto/tyga_shtangi_poyas.jpg" },
+                    { name: "Жим штанги лежа", muscle: "Грудь", reps: "3х8-6", desc: "Прогрессивная нагрузка", technique: "Сведите лопатки.", image: "techphoto/zhim_lezha.jpg" },
+                    { name: "Жим гантелей в наклоне", muscle: "Грудь", reps: "2х10", desc: "Верх груди", technique: "Скамья 30°.", image: "techphoto/zhim_ganteley_grudi.jpg" },
+                    { name: "Подъем гантелей на бицепс", muscle: "Бицепс", reps: "3х10-8", desc: "Концентрация", technique: "Локоть упирается в бедро.", image: "techphoto/ganteli_biceps.jpg" },
+                    { name: "Разгибание в блоке", muscle: "Трицепс", reps: "3х10-8", desc: "На трицепс", technique: "Корпус чуть наклонен.", image: "techphoto/razgibaniya_triceps.jpg" }
+                ],
+                wednesday: [
+                    { name: "Разгибание ног сидя", muscle: "Квадрицепс", reps: "3х10-8", desc: "Изоляция", technique: "Носочки на себя.", image: "techphoto/razgibaniya_nog.jpg" },
+                    { name: "Сгибание ног лежа", muscle: "Бицепс бедра", reps: "3х10-8", desc: "Задняя поверхность", technique: "Таз прижат к скамье.", image: "techphoto/sgibanie_nog.jpg" },
+                    { name: "Икры", muscle: "Икроножные", reps: "4х20", desc: "Подъем на носки", technique: "Максимальная амплитуда.", image: "techphoto/ikri.jpg" },
+                    { name: "Махи гантелей в стороны", muscle: "Дельты", reps: "3х10", desc: "Средняя дельта", technique: "Локти чуть согнуты.", image: "techphoto/maxi_gantelei.jpg" },
+                    { name: "Тяга штанги к подбородку", muscle: "Плечи", reps: "3х10", desc: "Широкий хват", technique: "Штанга до уровня ключиц.", image: "techphoto/tyga_shtangi_podborodok.jpg" },
+                    { name: "Обратная бабочка", muscle: "Задняя дельта", reps: "3х10", desc: "Рычажная тяга", technique: "Лопатки сведены.", image: "techphoto/obratnaya_babochka.jpg" },
+                    { name: "Жим гантелей сидя", muscle: "Дельты", reps: "3х10", desc: "Армейский жим", technique: "Спина прямая.", image: "techphoto/zhim_ganteley_sidya.jpg" }
+                ],
+                friday: [
+                    { name: "Жим лежа в наклоне", muscle: "Грудь", reps: "4х10-8", desc: "Верхняя часть", technique: "Угол 30°", image: "techphoto/zhim_v_naklone.jpg" },
+                    { name: "Тяга верхнего блока", muscle: "Спина", reps: "4х10", desc: "К груди", technique: "Прогиб в спине.", image: "techphoto/tyga_verx_block.jpg" },
+                    { name: "Жим ногами", muscle: "Ноги", reps: "4х10", desc: "Платформа", technique: "Стопы на ширине плеч.", image: "techphoto/zhim_nogami.jpg" },
+                    { name: "Французский жим", muscle: "Трицепс", reps: "4х10", desc: "За голову", technique: "Локти неподвижны.", image: "techphoto/france_zhim.jpg" },
+                    { name: "Подъем штанги на бицепс", muscle: "Бицепс", reps: "4х10-8", desc: "Стоя", technique: "Локти у корпуса.", image: "techphoto/podym_shtangi_biceps.jpg" }
+                ]
+            },
+            home: {
+                monday: [
+                    { name: "Отжимания широким хватом", muscle: "Грудные", reps: "3х12", desc: "Грудные", technique: "Локти в стороны.", image: "techphoto/otzhimaniya_shirokie_hvat.jpg" },
+                    { name: "Подтягивания на турнике", muscle: "Спина", reps: "3х8", desc: "Если есть турник", technique: "Лопатки сведены.", image: "techphoto/podtygivanya.jpg" },
+                    { name: "Тяга гантели в наклоне", muscle: "Спина", reps: "3х12", desc: "С гантелью", technique: "Наклон 45°.", image: "techphoto/tyga_ganteli_v_naklone.jpg" },
+                    { name: "Отжимания узким хватом", muscle: "Трицепс", reps: "3х10", desc: "Трицепс", technique: "Ладони вместе.", image: "techphoto/otzhimanya_uzkim_hvatom.jpg" },
+                    { name: "Подъем гантелей на бицепс", muscle: "Бицепс", reps: "3х12", desc: "Стоя", technique: "Локти прижаты.", image: "techphoto/ganteli_biceps.jpg" }
+                ],
+                wednesday: [
+                    { name: "Приседания со штангой", muscle: "Ноги", reps: "4х15", desc: "С рюкзаком", technique: "Спина прямая.", image: "techphoto/squat.jpg" },
+                    { name: "Выпады в движении", muscle: "Ноги", reps: "3х12 на ногу", desc: "Ягодицы", technique: "Шаг вперед.", image: "techphoto/vipady_nazad.jpg" },
+                    { name: "Икры стоя на ступеньке", muscle: "Икры", reps: "4х25", desc: "Дома", technique: "Подъем на носки.", image: "techphoto/ikri_na_stupenke.jpg" },
+                    { name: "Жим гантелей сидя", muscle: "Плечи", reps: "3х12", desc: "Армейский жим", technique: "Полная амплитуда.", image: "techphoto/zhim_ganteley_sidya.jpg" }
+                ],
+                friday: [
+                    { name: "Отжимания на стульях", muscle: "Грудные", reps: "4х10", desc: "Ноги на возвышении", technique: "Угол нагрузки.", image: "techphoto/otzhimaniya_na_stulyah.jpg" },
+                    { name: "Подтягивания на турнике", muscle: "Спина", reps: "4х8", desc: "На турнике", technique: "Широкий хват.", image: "techphoto/podtygivanya.jpg" },
+                    { name: "Приседания плие", muscle: "Ноги", reps: "4х15", desc: "Внутренняя бедро", technique: "Ноги шире плеч.", image: "techphoto/squat_plie.jpg" },
+                    { name: "Французский жим сидя", muscle: "Трицепс", reps: "4х10", desc: "С гантелью", technique: "За голову.", image: "techphoto/france_zhim.jpg" },
+                    { name: "Сгибания рук с резиной", muscle: "Бицепс", reps: "4х15", desc: "С эспандером", technique: "Контроль негатива.", image: "techphoto/sgibanie_s_rezinkoy.jpg" }
+                ]
+            },
+            street: {
+                monday: [
+                    { name: "Отжимания на брусьях", muscle: "Грудные", reps: "3х10", desc: "На брусьях", technique: "Наклон корпуса.", image: "techphoto/otzhimaniya-na-brusyah.jpg" },
+                    { name: "Подтягивания на турнике", muscle: "Спина", reps: "3х8", desc: "Турник", technique: "К груди.", image: "techphoto/podtygivanya.jpg" },
+                    { name: "Подтягивание на низкой перекладине", muscle: "Спина", reps: "3х10", desc: "На низкой перекладине", technique: "Корпус параллельно земле.", image: "techphoto/podtygivanya_na_nizkoe_perekladine.jpg" }
+                ],
+                wednesday: [
+                    { name: "Приседания с выпрыгиванием", muscle: "Ноги", reps: "4х10", desc: "Взрыв", technique: "Мягкое приземление.", image: "techphoto/squat_jump.jpg" },
+                    { name: "Выпады в движении", muscle: "Ноги", reps: "3х12 на ногу", desc: "На стадионе", technique: "Шаг широкий.", image: "techphoto/vipady_nazad.jpg" },
+                    { name: "Запрыгивания на тумбу", muscle: "Ноги", reps: "3х8", desc: "Плиометрика", technique: "Работа ног.", image: "techphoto/zaprigivanie_na_tumbu.jpg" }
+                ],
+                friday: [
+                    { name: "Подтягивания + отжимания суперсет", muscle: "Full Body", reps: "4х8/12", desc: "Комплекс", technique: "Минимум отдыха." },
+                    { name: "Бёрпи", muscle: "Все тело", reps: "4х10", desc: "Кардио+сила", technique: "Грудь касается пола.", image: "techphoto/berpi.jpg" },
+                    { name: "Бег с ускорениями", muscle: "Ноги", reps: "6х50м", desc: "Интервалы", technique: "Максимальная скорость.", image: "techphoto/beg.jpg" }
+                ]
+            }
+        };
+
+        // Для ОПЫТНЫХ с адаптацией
+        const advancedBase = {
+            gym: {
+                monday: [
+                    { name: "Подтягивания с весом", muscle: "Спина", reps: "5х6", desc: "Широчайшие", technique: "Добавьте отягощение.", image: "techphoto/podtygivanya_s_vesom.jpg" },
+                    { name: "Тяга штанги в наклоне", muscle: "Спина", reps: "5х8", desc: "Верх спины", technique: "Штанга к животу.", image: "techphoto/tyga_shtangi_poyas.jpg" },
+                    { name: "Подъем штанги на бицепс", muscle: "Бицепс", reps: "5х8", desc: "Бицепс", technique: "Локти прижаты.", image: "techphoto/podym_shtangi_biceps.jpg" },
+                    { name: "Молотки", muscle: "Брахиалис", reps: "4х10", desc: "Предплечья", technique: "Нейтральный хват.", image: "techphoto/molotki.jpg" }
+                ],
+                wednesday: [
+                    { name: "Жим штанги лежа", muscle: "Грудные", reps: "5х6", desc: "База", technique: "Лопатки сведены.", image: "techphoto/zhim_lezha.jpg" },
+                    { name: "Отжимания на брусьях", muscle: "Трицепс", reps: "5х8", desc: "Трицепс", technique: "Корпус вертикально.", image: "techphoto/otzhimaniya-na-brusyah.jpg" },
+                    { name: "Жим гантелей сидя", muscle: "Дельты", reps: "5х8", desc: "Плечи", technique: "Полная амплитуда.", image: "techphoto/zhim_ganteley_sidya.jpg" }
+                ],
+                friday: [
+                    { name: "Приседания со штангой", muscle: "Ноги", reps: "5х5", desc: "База", technique: "Глубокий присед.", image: "techphoto/squat.jpg" },
+                    { name: "Становая тяга", muscle: "Спина/Ноги", reps: "5х5", desc: "Всё тело", technique: "Идеальная техника.", image: "techphoto/stanovay_tyga.jpg" },
+                    { name: "Болгарские выпады", muscle: "Ноги", reps: "5х8", desc: "Изоляция", technique: "Гантели в руках.", image: "techphoto/bolgarskie_vipady.jpg" }
+                ]
+            },
+            home: {
+                monday: [
+                    { name: "Подтягивания с рюкзаком", muscle: "Спина", reps: "5х6", desc: "С отягощением", technique: "Контролируй движение.", image: "techphoto/podtyagivaniye_s_rykzakom.jpg" },
+                    { name: "Отжимания с хлопком", muscle: "Грудные", reps: "5х8", desc: "Взрыв", technique: "Хлопок в воздухе.", image: "techphoto/otzhimaniya_s_hlopkom.jpg" }
+                ],
+                wednesday: [
+                    { name: "Приседания пистолетиком", muscle: "Ноги", reps: "5х6 на ногу", desc: "Сложный баланс", technique: "Рука вперед для баланса.", image: "techphoto/prised_na_odnoy_noge.jpg" },
+                    { name: "Бёрпи", muscle: "Все тело", reps: "5х12", desc: "Интенсив", technique: "Грудь касается пола.", image: "techphoto/berpi.jpg" }
+                ],
+                friday: [
+                    { name: "Круговая тренировка", muscle: "Full Body", reps: "5 кругов", desc: "Максимум", technique: "Минимум отдыха."}
+                ]
+            },
+            street: {
+                monday: [
+                    { name: "Выход силой на турнике", muscle: "Спина/Плечи", reps: "5х3-5", desc: "Сложный элемент", technique: "Тяга + жим.", image: "techphoto/vyhod_siloy.jpg" },
+                    { name: "Подтягивания широким хватом", muscle: "Широчайшие", reps: "5х8", desc: "База", technique: "К груди.", image: "techphoto/podtygivanya_shirokim_hvatom.jpg" }
+                ],
+                wednesday: [
+                    { name: "Приседания с запрыгиванием", muscle: "Ноги", reps: "5х10", desc: "Плиометрика", technique: "Мягкое приземление.", image: "techphoto/squat_jump.jpg" },
+                    { name: "Отжимания на брусьях с весом", muscle: "Трицепс", reps: "5х8", desc: "Интенсив", technique: "Добавьте рюкзак.", }
+                ],
+                friday: [
+                    { name: "Бег 1 км + берпи суперсет", muscle: "Кардио", reps: "3 подхода", desc: "Функциональное", technique: "Максимальная пульс." }
+                ]
+            }
+        };
+
+        function getMuscleIcon(muscleName) {
+            const icons = { "Грудные": "💪", "Спина": "🦾", "Ноги": "🦵", "Бицепс": "💪", "Трицепс": "💪", "Квадрицепс": "🦵", "Бицепс бедра": "🦵", "Икроножные": "🦵", "Дельты": "🏋️", "Плечи": "🏋️", "Задняя дельта": "🏋️", "Full Body": "🔥" };
+            return icons[muscleName] || "🏋️";
+        }
+
+        let currentLevel = "beginner", currentPlace = "gym", currentDayIndex = 0;
+
+        function getCurrentExercises() {
+            if (currentLevel === "beginner") {
+                return beginnerBase[currentPlace] || beginnerBase.gym;
+            } else if (currentLevel === "intermediate") {
+                let dayKey = currentDayIndex === 0 ? "monday" : (currentDayIndex === 1 ? "wednesday" : "friday");
+                return intermediateBase[currentPlace]?.[dayKey] || intermediateBase.gym[dayKey] || intermediateBase.gym.monday;
+            } else {
+                let dayKey = currentDayIndex === 0 ? "monday" : (currentDayIndex === 1 ? "wednesday" : "friday");
+                return advancedBase[currentPlace]?.[dayKey] || advancedBase.gym[dayKey] || advancedBase.gym.monday;
+            }
+        }
+
+        function getTitleByDay() {
+            const placeNames = { gym: "Зал 🏋️", home: "Дом 🏠", street: "Улица 🌳" };
+            if (currentLevel === "beginner") {
+                return [`Понедельник (Full Body) - ${placeNames[currentPlace]}`, `Среда (Full Body) - ${placeNames[currentPlace]}`, `Пятница (Full Body) - ${placeNames[currentPlace]}`][currentDayIndex];
+            } else if (currentLevel === "intermediate") {
+                return [`Понедельник (Верх тела) - ${placeNames[currentPlace]}`, `Среда (Низ + Плечи) - ${placeNames[currentPlace]}`, `Пятница (Full Body) - ${placeNames[currentPlace]}`][currentDayIndex];
+            } else {
+                return [`Понедельник (Тяни) - ${placeNames[currentPlace]}`, `Среда (Толкай) - ${placeNames[currentPlace]}`, `Пятница (Ноги) - ${placeNames[currentPlace]}`][currentDayIndex];
+            }
+        }
+
+        function renderDayButtons() {
+            let btns = '';
+            const dayNames = ["ПН", "СР", "ПТ"];
+            for (let i = 0; i < 3; i++) {
+                btns += `<button class="day-btn ${i === currentDayIndex ? 'active' : ''}" data-day="${i}"><i class="fas fa-calendar-day"></i> ${dayNames[i]}</button>`;
+            }
+            $('#daysTabs').html(btns);
+            $('.day-btn').click(function() { currentDayIndex = parseInt($(this).data('day')); renderDayButtons(); renderProgram(); });
+        }
+
+        function renderProgram() {
+            const exercises = getCurrentExercises();
+            const title = getTitleByDay();
+            const levelNames = { beginner: "Начинающий", intermediate: "Средний", advanced: "Опытный" };
+            const placeNames = { gym: "Тренажерный зал", home: "Дом", street: "Улица/Стадион" };
+            $('#programTitle').html(`🏋️ ${title}`);
+            $('#programSubtitle').html(`Уровень: ${levelNames[currentLevel]} | Место: ${placeNames[currentPlace]}`);
+
+            let html = '';
+            exercises.forEach((ex, idx) => {
+                html += `
+                    <div class="exercise-card">
+                        <div class="exercise-main">
+                            <div class="muscle-visual">
+                                <div class="muscle-img">${getMuscleIcon(ex.muscle)}</div>
+                                <span class="muscle-name">${ex.muscle}</span>
+                            </div>
+                            <div class="exercise-details">
+                                <h3>${ex.name}</h3>
+                                <div class="exercise-reps"><i class="fas fa-repeat"></i> ${ex.reps}</div>
+                                <p class="exercise-desc">${ex.desc}</p>
+                                <button class="technique-btn" data-techidx="${idx}"><i class="fas fa-video"></i> Техника выполнения</button>
+                                <div class="technique-modal" id="techModal-${idx}">
+                                    <i class="fas fa-check-circle" style="color:#ff914d"></i> 
+                                    <strong>📖 Техника:</strong> ${ex.technique}<br><br>
+                                    <!-- <img src="images/${ex.name.toLowerCase().replace(/ /g, '_')}.jpg" style="width:100%; border-radius:16px;"> -->
+                                    <img src="${ex.image}" alt="${ex.name}" style="max-width:100%; max-height:150px;">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            $('#exercisesList').html(html);
+            $('.technique-btn').click(function() {
+                let i = $(this).data('techidx');
+                $(`#techModal-${i}`).toggleClass('show');
+            });
+        }
+
+        $('#levelSelect, #placeSelect').on('change', function() {
+            currentLevel = $('#levelSelect').val();
+            currentPlace = $('#placeSelect').val();
+            currentDayIndex = 0;
+            renderDayButtons();
+            renderProgram();
+        });
+        renderDayButtons();
+        renderProgram();
+
+        function calculateKBJU() {
+            const gender = $('#gender').val();
+            let height = parseFloat($('#height').val());
+            let weight = parseFloat($('#weight').val());
+            let age = parseFloat($('#age').val());
+            let activity = parseFloat($('#activity').val());
+            let goal = $('#goalKBJU').val();
+            if (isNaN(height) || isNaN(weight) || isNaN(age)) return;
+            let bmr = (gender === 'male') ? (10 * weight + 6.25 * height - 5 * age + 5) : (10 * weight + 6.25 * height - 5 * age - 161);
+            let tdee = bmr * activity;
+            let kcal = (goal === 'lose') ? tdee * 0.85 : (goal === 'gain') ? tdee * 1.1 : tdee;
+            let protein = Math.round(weight * 1.8);
+            let fats = Math.round((kcal * 0.25) / 9);
+            let carbs = Math.round((kcal - (protein * 4) - (fats * 9)) / 4);
+            if (carbs < 100) carbs = 100;
+            $('#resultStats').html(`
+                <div class="stat"><span class="stat-value">${Math.round(kcal)}</span><div class="stat-label">Ккал</div></div>
+                <div class="stat"><span class="stat-value">${protein}</span><div class="stat-label">Белки</div></div>
+                <div class="stat"><span class="stat-value">${fats}</span><div class="stat-label">Жиры</div></div>
+                <div class="stat"><span class="stat-value">${carbs}</span><div class="stat-label">Углеводы</div></div>
+            `);
+            $('#resultTip').html(`🎯 Цель: ${goal === 'lose' ? 'Похудение' : goal === 'gain' ? 'Набор массы' : 'Поддержание'} | BMR: ${Math.round(bmr)} ккал`);
+        }
+        $('#calcKBJU').click(calculateKBJU);
+        calculateKBJU();
+
+        const tipsList = [
+            { text: "Пей воду за 20 минут до еды — ускоряет метаболизм.", icon: "fas fa-tint" },
+            { text: "Сон 7-8 часов — лучшее восстановление мышц.", icon: "fas fa-bed" },
+            { text: "Всегда разминайся 5-10 минут перед тренировкой.", icon: "fas fa-heartbeat" },
+            { text: "Белок в каждый приём пищи помогает росту мышц.", icon: "fas fa-egg" },
+            { text: "Записывай прогресс — это мотивирует.", icon: "fas fa-chart-line" },
+            { text: "Растяжка после тренировки снижает крепатуру.", icon: "fas fa-hand-peace" }
+        ];
+        let tipIdx = 0;
+        function renderTip() {
+            $('#tipContent').html(`<div class="tip-icon"><i class="${tipsList[tipIdx].icon}"></i></div><div class="tip-text">“${tipsList[tipIdx].text}”</div>`);
+            $('.dot').removeClass('active');
+            $(`.dot[data-idx="${tipIdx}"]`).addClass('active');
+        }
+        function initTips() {
+            let dots = '';
+            tipsList.forEach((_, i) => { dots += `<div class="dot ${i === 0 ? 'active' : ''}" data-idx="${i}"></div>`; });
+            $('#sliderDots').html(dots);
+            renderTip();
+            $('#prevTip').click(() => { tipIdx = (tipIdx - 1 + tipsList.length) % tipsList.length; renderTip(); });
+            $('#nextTip').click(() => { tipIdx = (tipIdx + 1) % tipsList.length; renderTip(); });
+            $(document).on('click', '.dot', function() { tipIdx = $(this).data('idx'); renderTip(); });
+        }
+        initTips();
+    });
+</script>
+</body>
+</html>
