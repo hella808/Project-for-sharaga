@@ -1,0 +1,59 @@
+// start.js - веб-сервер для статических файлов (HTML, CSS, JS и др.)
+const http = require('http');
+const fs = require('fs');
+const path = require('path');
+
+const PORT = process.env.PORT || 3000;
+const PUBLIC_DIR = path.join(__dirname, 'public'); // папка с файлами сайта
+
+// MIME-типы для разных расширений файлов
+const mimeTypes = {
+    '.html': 'text/html',
+    '.css': 'text/css',
+    '.js': 'application/javascript',
+    '.json': 'application/json',
+    '.png': 'image/png',
+    '.jpg': 'image/jpeg',
+    '.jpeg': 'image/jpeg',
+    '.gif': 'image/gif',
+    '.svg': 'image/svg+xml',
+    '.ico': 'image/x-icon',
+    '.txt': 'text/plain'
+};
+
+const server = http.createServer((req, res) => {
+    // Обработка запроса к корню ('/') -> отдаём FitGuide.html
+    let filePath = req.url === '/' 
+        ? path.join(PUBLIC_DIR, 'FitGuide.html')
+        : path.join(PUBLIC_DIR, req.url);
+
+    // Получаем расширение файла
+    const ext = path.extname(filePath);
+    const contentType = mimeTypes[ext] || 'application/octet-stream';
+
+    // Читаем файл
+    fs.readFile(filePath, (err, data) => {
+        if (err) {
+            if (err.code === 'ENOENT') {
+                // Файл не найден - 404
+                res.writeHead(404, { 'Content-Type': 'text/html; charset=utf-8' });
+                res.end('<h1>404 - Файл не найден</h1>');
+            } else {
+                // Ошибка сервера - 500
+                res.writeHead(500, { 'Content-Type': 'text/html; charset=utf-8' });
+                res.end('<h1>500 - Внутренняя ошибка сервера</h1>');
+            }
+            return;
+        }
+
+        // Успешная отдача файла
+        res.writeHead(200, { 'Content-Type': `${contentType}; charset=utf-8` });
+        res.end(data);
+    });
+});
+
+server.listen(PORT, () => {
+    console.log(` Сервер запущен на http://localhost:${PORT}`);
+    console.log(` Отдаём файлы из: ${PUBLIC_DIR}`);
+    console.log(`Для остановки нажмите Ctrl+C`);
+});
