@@ -1,59 +1,49 @@
-// start.js - веб-сервер для статических файлов (HTML, CSS, JS и др.)
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
 
-const PORT = process.env.PORT || 3000;
-const PUBLIC_DIR = path.join(__dirname, 'public'); // папка с файлами сайта
-
-// MIME-типы для разных расширений файлов
-const mimeTypes = {
-    '.html': 'text/html',
-    '.css': 'text/css',
-    '.js': 'application/javascript',
-    '.json': 'application/json',
-    '.png': 'image/png',
-    '.jpg': 'image/jpeg',
-    '.jpeg': 'image/jpeg',
-    '.gif': 'image/gif',
-    '.svg': 'image/svg+xml',
-    '.ico': 'image/x-icon',
-    '.txt': 'text/plain'
-};
+const hostname = '192.168.10.204';
+const port = 3002;
 
 const server = http.createServer((req, res) => {
-    // Обработка запроса к корню ('/') -> отдаём FitGuide.html
-    let filePath = req.url === '/' 
-        ? path.join(PUBLIC_DIR, 'FitGuide.html')
-        : path.join(PUBLIC_DIR, req.url);
-
-    // Получаем расширение файла
-    const ext = path.extname(filePath);
-    const contentType = mimeTypes[ext] || 'application/octet-stream';
-
-    // Читаем файл
-    fs.readFile(filePath, (err, data) => {
-        if (err) {
-            if (err.code === 'ENOENT') {
-                // Файл не найден - 404
-                res.writeHead(404, { 'Content-Type': 'text/html; charset=utf-8' });
-                res.end('<h1>404 - Файл не найден</h1>');
-            } else {
-                // Ошибка сервера - 500
-                res.writeHead(500, { 'Content-Type': 'text/html; charset=utf-8' });
-                res.end('<h1>500 - Внутренняя ошибка сервера</h1>');
-            }
-            return;
-        }
-
-        // Успешная отдача файла
-        res.writeHead(200, { 'Content-Type': `${contentType}; charset=utf-8` });
-        res.end(data);
+  console.log('Запрос:', req.url);
+  
+  if (req.url === '/' || req.url === '/FitGuide.html') {
+    // Обслуживание HTML файла
+    fs.readFile('FitGuide.html', (err, data) => {
+      if (err) {
+        console.error('Ошибка чтения FitGuide.html:', err);
+        res.statusCode = 500;
+        res.setHeader('Content-Type', 'text/plain');
+        res.end('Error loading FitGuide.html');
+        return;
+      }
+      res.statusCode = 200;
+      res.setHeader('Content-Type', 'text/html');
+      res.end(data);
     });
+  } else if (req.url === '/FitGuide.css') {
+    // Обслуживание CSS файла
+    fs.readFile('FitGuide.css', (err, data) => {
+      if (err) {
+        console.error('Ошибка чтения FitGuide.css:', err);
+        res.statusCode = 404;
+        res.setHeader('Content-Type', 'text/plain');
+        res.end('CSS not found');
+        return;
+      }
+      res.statusCode = 200;
+      res.setHeader('Content-Type', 'text/css');
+      res.end(data);
+    });
+  } else {
+    // Обработка других запросов
+    res.statusCode = 404;
+    res.setHeader('Content-Type', 'text/plain');
+    res.end('Not found');
+  }
 });
 
-server.listen(PORT, () => {
-    console.log(` Сервер запущен на http://localhost:${PORT}`);
-    console.log(` Отдаём файлы из: ${PUBLIC_DIR}`);
-    console.log(`Для остановки нажмите Ctrl+C`);
+server.listen(port, hostname, () => {
+  console.log(`Server running at http://${hostname}:${port}/`);
 });
